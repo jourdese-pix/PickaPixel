@@ -65,7 +65,7 @@ const WelcomeScreen = ({ navigation }) => {
     const [longPressedIndex, setLongPressedIndex] = useState(null);
 
     const components = [
-        'QRCode','SharedElement', 'Template'
+        'QRCode','SharedElementJ', 'Template'
     ];
 
     return (
@@ -218,14 +218,14 @@ const WelcomeScreen = ({ navigation }) => {
                 </View>
             </>
         )}
-                {component === 'SharedElement' && (
+                {component === 'SharedElementJ' && (
             <>
                 <Text style={{ color: '#333', fontSize: 15, marginBottom: 8 }}>
                     Shared Element
                 </Text>
                 <NavigationButton
                 title="Go to Shared Template"
-                onPress={() => navigation.navigate('SharedElement', { 
+                onPress={() => navigation.navigate('SharedElementJ', { 
                  })}
                 style={{ backgroundColor: '#3700b3' }}
                 />
