@@ -49,6 +49,25 @@ const SharedElementJ = () => {
         <AnimatedNavigationButton title="A3" to="A3" />
         <AnimatedNavigationButton title="A4" to="A4" />
       </View>
+      <Text style={styles.title}>Gorhom bottom sheet</Text>
+        <View style={styles.buttonRow}>
+            <AnimatedNavigationButton title="View" to="G1 - View" />
+            <AnimatedNavigationButton title="ScrollView" to="G2 - ScrollView" />         
+        </View>
+        <View style={styles.buttonRow}>
+            <AnimatedNavigationButton title="FlashList" to="G3 - FlashList" />
+            <AnimatedNavigationButton title="SectionList" to="G4 - SectionList" />
+        </View>
+        <View style={styles.buttonRow}>
+            <AnimatedNavigationButton title="VirtualizedList" to="G5 - VirtualizedList" />
+            <AnimatedNavigationButton title="Backdrop" to="G6 - Backdrop" />
+
+        </View>
+        <View style={styles.buttonRow}>
+            <AnimatedNavigationButton title="Footer" to="G7 - Footer" />
+            <AnimatedNavigationButton title="TextInput" to="G8 - TextInput" />
+        </View>
+
     </ScreenWrapper>
   );
 };
@@ -64,7 +83,7 @@ const styles = StyleSheet.create({
   },
   buttonRow: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
+    justifyContent: 'space-between',
     alignItems: 'center',
     marginHorizontal: 20,
   },
@@ -73,6 +92,8 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 20,
     borderRadius: 8,
+    marginHorizontal: 8, // ← add this line
+    marginVertical: 8,   // ← optional vertical spacing too
   },
   buttonText: {
     color: '#fff',

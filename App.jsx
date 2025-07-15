@@ -7,9 +7,11 @@
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { createStackNavigator, TransitionPresets } from '@react-navigation/stack';
 
 
 const Stack = createNativeStackNavigator();
+// const Stack = createStackNavigator();
 import WelcomeScreen from './screens/WelcomeScreen';
 import ViewScreen from './screens/ViewScreen';
 import TextScreen from './screens/TextScreen';        
@@ -22,6 +24,17 @@ import A1 from './screens/A1'
 import A2 from './screens/A2'
 import A3 from './screens/A3'
 import A4 from './screens/A4'
+import G1 from './screens/G1'
+import G2 from './screens/G2'
+import G3 from './screens/G3'
+import G4 from './screens/G4'
+import G5 from './screens/G5'
+import G6 from './screens/G6'
+import G7 from './screens/G7'
+import G8 from './screens/G8'
+import { enableScreens } from 'react-native-screens';
+enableScreens();
+
 
 const App = () => {
   return (
@@ -56,30 +69,46 @@ const App = () => {
           name="A1"
           component={A1}
           options={{
-            animation: 'fade', // 👈 A1 will fade in
+            presentation: 'transparentModal',
+            animation: 'slide_from_bottom', // or 'fade', 'default'
+            headerShown: false, // optional
           }}
         />
         <Stack.Screen
           name="A2"
           component={A2}
           options={{
-            animation: 'slide_from_left', // 👈 A2 will slide from left
+            presentation: 'transparentModal',
+            animation: 'fade', // or 'fade', 'default'
+            headerShown: false, // optional
           }}
         />
         <Stack.Screen
           name="A3"
           component={A3}
           options={{
-            animation: 'slide_from_bottom', // 👈 A3 will slide from bottom
+            presentation: 'transparentModal',
+            animation: 'slide_from_right', // or 'fade', 'default'
+            headerShown: false, // optional
           }}
         />
         <Stack.Screen
           name="A4"
           component={A4}
           options={{
-            animation: 'slide_from_top', // 👈 A4 will have no animation
+            presentation: 'transparentModal',
+            animation: 'default', // or 'fade', 'default'
+            headerShown: false, // optional
           }}
         />
+        <Stack.Screen name="G1 - View" component={G1} />
+        <Stack.Screen name="G2 - ScrollView" component={G2} />
+        <Stack.Screen name="G3 - FlashList" component={G3} />
+        <Stack.Screen name="G4 - SectionList" component={G4} />
+        <Stack.Screen name="G5 - VirtualizedList" component={G5} />
+        <Stack.Screen name="G6 - Backdrop" component={G6} />
+        <Stack.Screen name="G7 - Footer" component={G7} />
+        <Stack.Screen name="G8 - TextInput" component={G8} />
 
       </Stack.Navigator>
     </NavigationContainer>

@@ -1,20 +1,40 @@
-import { StyleSheet, Text} from 'react-native'
-import React, { useState } from 'react'
-import ScreenWrapper from './ScreenWrapper';
+import React from 'react';
+import { View, Text, Pressable, StyleSheet } from 'react-native';
 
-
-const A4 = () => {
-
-    return (
-    <ScreenWrapper>
-        <Text>A4</Text>    
-    </ScreenWrapper>
-    
-    )
-}
-
-export default A4
+const A4 = ({ navigation }) => {
+  return (
+    <View style={styles.overlay}>
+      <View style={styles.modal}>
+        <Text style={styles.title}>A4 Modal</Text>
+        <Pressable onPress={() => navigation.goBack()}>
+          <Text style={styles.dismiss}>Close</Text>
+        </Pressable>
+      </View>
+    </View>
+  );
+};
 
 const styles = StyleSheet.create({
- 
-})
+  overlay: {
+    flex: 1,
+    justifyContent: 'flex-end',         // 👈 stick modal to bottom
+  },
+  modal: {
+    backgroundColor: 'white',
+    padding: 24,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    minHeight: 200,
+  },
+  title: {
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  dismiss: {
+    marginTop: 20,
+    color: '#007aff',
+    fontWeight: '600',
+  },
+});
+
+export default A4;
