@@ -65,7 +65,7 @@ const WelcomeScreen = ({ navigation }) => {
     const [longPressedIndex, setLongPressedIndex] = useState(null);
 
     const components = [
-        'QRCode','SharedElementJ', 'Template'
+        'QRCode','SharedElementJ', 'Uplimit', 'Template'
     ];
 
     return (
@@ -226,6 +226,30 @@ const WelcomeScreen = ({ navigation }) => {
                 <NavigationButton
                 title="Go to Shared Template"
                 onPress={() => navigation.navigate('SharedElementJ', { 
+                 })}
+                style={{ backgroundColor: '#3700b3' }}
+                />
+            </>
+        )}
+                {component === 'Uplimit' && (
+            <>
+                <Text style={{ color: '#333', fontSize: 15, marginBottom: 8 }}>
+                    Template
+                </Text>
+                {/* <Pressable
+                    style={{
+                        backgroundColor: '#3700b3',
+                        padding: 10,
+                        borderRadius: 8,
+                        alignItems: 'center',
+                    }}
+                    onPress={() => navigation.navigate('Template')}
+                >
+                    <Text style={{ color: '#fff', fontWeight: 'bold' }}>Go to Template</Text>
+                </Pressable> */}
+                <NavigationButton
+                title="Go to Uplimit"
+                onPress={() => navigation.navigate('Uplimit', { 
                  })}
                 style={{ backgroundColor: '#3700b3' }}
                 />

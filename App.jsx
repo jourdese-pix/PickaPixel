@@ -32,6 +32,7 @@ import G5 from './screens/G5'
 import G6 from './screens/G6'
 import G7 from './screens/G7'
 import G8 from './screens/G8'
+import Uplimit from './screens/Uplimit'
 import { enableScreens } from 'react-native-screens';
 enableScreens();
 
@@ -79,7 +80,7 @@ const App = () => {
           component={A2}
           options={{
             presentation: 'transparentModal',
-            animation: 'fade', // or 'fade', 'default'
+            animation: 'slide_from_left', // or 'fade', 'default'
             headerShown: false, // optional
           }}
         />
@@ -109,6 +110,7 @@ const App = () => {
         <Stack.Screen name="G6 - Backdrop" component={G6} />
         <Stack.Screen name="G7 - Footer" component={G7} />
         <Stack.Screen name="G8 - TextInput" component={G8} />
+        <Stack.Screen name="Uplimit" component={Uplimit}/>
 
       </Stack.Navigator>
     </NavigationContainer>
