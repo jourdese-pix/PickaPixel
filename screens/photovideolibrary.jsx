@@ -1,753 +1,227 @@
-
-import {
-    AppState,
-    Image,
-    Linking,
-    PermissionsAndroid,
-    Platform,
-    Pressable,
-    SafeAreaView,
-    Text,
-    View
-} from "react-native";
-import Styles from "../global/styles";
-import React, {useEffect, useRef, useState} from "react";
-
-import {Directions, FlatList, ScrollView, Gesture, GestureDetector} from "react-native-gesture-handler";
-import Animated, {FadeIn, FadeOut, runOnJS, SlideInLeft, SlideInRight, SlideOutRight} from "react-native-reanimated";
-import {BottomSheetFlashList, BottomSheetFlatList} from "@gorhom/bottom-sheet";
-import IconButton from "./iconbutton";
-import {
-    faAlbum, faCamera,
-    faCheckCircle, faFilms,
-    faImages, faNewspaper,
-    faPage, faPhotoVideo,
-    faPlusCircle,
-    faTimes,
-    faVideo
-} from "@fortawesome/pro-regular-svg-icons";
-import LanguageSelector from "../language/languageselector";
-import { CameraRoll } from "@react-native-camera-roll/camera-roll";
-import FastImage from "react-native-fast-image";
-import VerticalAligner from "./verticalaligner";
-import {FontAwesomeIcon} from "@fortawesome/react-native-fontawesome";
-import Button from "./button";
-import Header from "./header";
-import Variables from "../global/variables";
-import Time from "../utils/time";
-import Data from "../utils/data";
-
-const PhotoVideoLibrary = (props) => {
-
-    const [photos, setPhotos] = useState([]); // [{type:photo, uri:uri, thumbnail:thumbnail}, {type:video, uri:uri, thumbnail:thumbnail}
-
-    const [videos, setVideos] = useState([]); // [{type:photo, uri:uri, thumbnail:thumbnail}, {type:video, uri:uri, thumbnail:thumbnail}
-
-    const [photosVideosExtraData, setPhotosVideosExtraData] = useState(0);
-
-    const [selectedPhotosVideos, setSelectedPhotosVideos] = useState([]);
-
-    const lastPhotoCursor = useRef(null);
-
-    const lastVideoCursor = useRef(null);
-
-    const [mediaType, setMediaType] = useState('Photos'); // 0:photos, 1:videos, 2:albums
-
-    const photosAlreadyFetchRef = useRef(false);
-
-    const videosAlreadyFetchRef = useRef(false);
-
-    const [permissions, setPermissions] = useState({
-        photos:false,
-        videos:false
-    })
-
-
-
-    /*******USE EFFECTS********/
-
-    useEffect(() => {
-
-        if(Platform.OS === 'ios') {
-            setPermissions({photos:true, videos:true});
-        }
-
-        AppState.addEventListener('change', nextAppState => {
-
-            if(Platform.OS === 'android') {
-
-                if (nextAppState === 'active') {
-
-                    checkPermissions();
-
-                }
-
-            }
-
-
-        });
-
-    }, [])
-
-    useEffect(() => {
-
-        if(Platform.OS === 'android') {
-
-            checkPermissions();
-
-        }else{
-
-            if(mediaType == 'Photos'){
-
-                if(!photosAlreadyFetchRef.current){
-
-                    getPhotos(false);
-
-                }
-
-            }
-
-            if(mediaType == 'Videos'){
-
-                if(!videosAlreadyFetchRef.current){
-
-                    getVideos(false);
-
-                }
-
-            }
-
-        }
-
-    }, [mediaType])
-
-
-    /*******END USE EFFECTS********/
-
-    const checkPermissions = () => {
-
-        if(mediaType == 'Photos'){
-
-            PermissionsAndroid.check(PermissionsAndroid.PERMISSIONS.READ_MEDIA_IMAGES).then(response => {
-
-                if(!response){
-                    requestImagePermission();
-                }else{
-
-                    setPermissions({photos: true, videos:permissions.videos});
-
-                    if(!photosAlreadyFetchRef.current){
-
-                        getPhotos(false);
-
-                    }
-
-                }
-
-            });
-
-        }
-
-        if(mediaType == 'Videos'){
-
-            PermissionsAndroid.check(PermissionsAndroid.PERMISSIONS.READ_MEDIA_VIDEO).then(response => {
-
-                if(!response){
-                    requestVideoPermission();
-                }else{
-
-                    setPermissions({photos: permissions.photos, videos:true});
-
-                    if(!videosAlreadyFetchRef.current){
-
-                        getVideos(false)
-
-                    }
-
-                }
-
-            });
-
-        }
-
+import React, { useEffect, useState, useCallback } from 'react';
+import { Platform, View, Text, Image, Pressable, ActivityIndicator, Linking, AppState, FlatList } from 'react-native';
+import { CameraRoll } from '@react-native-camera-roll/camera-roll';
+import { check, request, PERMISSIONS, RESULTS } from 'react-native-permissions';
+import RNFS from 'react-native-fs';
+
+// Permissions helper
+const getPermissions = async () => {
+  let permissionImages, permissionVideos;
+  if (Platform.OS === 'ios') {
+    permissionImages = PERMISSIONS.IOS.PHOTO_LIBRARY;
+    permissionVideos = PERMISSIONS.IOS.PHOTO_LIBRARY;
+  } else if (Platform.OS === 'android') {
+    const apiLevel = Platform.Version;
+    if (apiLevel >= 33) {
+      permissionImages = PERMISSIONS.ANDROID.READ_MEDIA_IMAGES;
+      permissionVideos = PERMISSIONS.ANDROID.READ_MEDIA_VIDEO;
+    } else {
+      permissionImages = PERMISSIONS.ANDROID.READ_EXTERNAL_STORAGE;
+      permissionVideos = PERMISSIONS.ANDROID.READ_EXTERNAL_STORAGE;
     }
+  } else {
+    throw new Error('Unsupported platform');
+  }
+  const checkAndRequest = async (perm) => {
+    let result = await check(perm);
+    if (result !== RESULTS.GRANTED) {
+      result = await request(perm);
+    }
+    return result === RESULTS.GRANTED;
+  };
+  const hasImagePerm = await checkAndRequest(permissionImages);
+  const hasVideoPerm = await checkAndRequest(permissionVideos);
+  return hasImagePerm || hasVideoPerm;
+};
 
-    const requestImagePermission = async () => {
-        try {
-            const granted = await PermissionsAndroid.request(
-                PermissionsAndroid.PERMISSIONS.READ_MEDIA_IMAGES,
-                {
-                    title: 'Pixelmine ',
-                    message:
-                        'Pixelmine needs access to your image library',
-                    buttonNeutral: 'Ask Me Later',
-                    buttonNegative: 'Cancel',
-                    buttonPositive: 'OK',
-                },
-            );
-            if (granted === PermissionsAndroid.RESULTS.GRANTED) {
-
-                setPermissions({photos: true, videos:permissions.videos});
-
-                if(!photosAlreadyFetchRef.current){
-
-                    getPhotos(false);
-
-                }
-
-            } else {
-                setPermissions({photos: false, videos:permissions.videos});
-            }
-        } catch (err) {
-            console.warn(err);
+// Async file size utility for iOS/Android
+export const getSelectedFilesSize = async (selectedList) => {
+  let total = 0;
+  for (const item of selectedList) {
+    if (item.image.fileSize && typeof item.image.fileSize === 'number') {
+      total += item.image.fileSize;
+    } else if (item.image.uri) {
+      try {
+        let path = item.image.uri;
+        // On Android, uri may be content://, on iOS file://
+        if (Platform.OS === 'ios' && path.startsWith('file://')) {
+          path = path.replace('file://', '');
         }
+        // On Android, try to resolve content:// to file path if possible
+        if (Platform.OS === 'android' && path.startsWith('content://')) {
+          // Try to copy to cache and stat (react-native-fs can't stat content:// directly)
+          const destPath = `${RNFS.CachesDirectoryPath}/${Math.random().toString(36).substring(2, 15)}`;
+          await RNFS.copyFile(path, destPath);
+          const stat = await RNFS.stat(destPath);
+          total += stat.size;
+          await RNFS.unlink(destPath);
+        } else {
+          const stat = await RNFS.stat(path);
+          total += stat.size;
+        }
+      } catch (e) {
+        // ignore or handle error
+      }
+    }
+  }
+  return total;
+};
+
+const PhotoVideoLibrary = ({ onSelectionDone, first = 30 }) => {
+  const [media, setMedia] = useState([]);
+  const [selected, setSelected] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [hasPermission, setHasPermission] = useState(Platform.OS === 'ios');
+  const [endCursor, setEndCursor] = useState(null);
+  const [fetchingMore, setFetchingMore] = useState(false);
+  const [selectedSizeMB, setSelectedSizeMB] = useState('0.00');
+  const [disableDone, setDisableDone] = useState(false);
+
+  // Permission and AppState logic
+  useEffect(() => {
+    let isActive = true;
+    const checkAndFetch = async () => {
+      setLoading(true);
+      try {
+        const granted = await getPermissions();
+        if (!isActive) return;
+        setHasPermission(granted);
+        if (granted) fetchMedia();
+      } finally {
+        if (isActive) setLoading(false);
+      }
     };
-
-    const requestVideoPermission = async () => {
-        try {
-            const granted = await PermissionsAndroid.request(
-                PermissionsAndroid.PERMISSIONS.READ_MEDIA_VIDEO,
-                {
-                    title: 'Pixelmine ',
-                    message:
-                        'Pixelmine needs access to your video library',
-                    buttonNeutral: 'Ask Me Later',
-                    buttonNegative: 'Cancel',
-                    buttonPositive: 'OK',
-                },
-            );
-            if (granted === PermissionsAndroid.RESULTS.GRANTED) {
-
-                setPermissions({photos: permissions.photos, videos:true});
-
-                if(!videosAlreadyFetchRef.current){
-
-                    getVideos(false)
-
-                }
-
-            } else {
-                setPermissions({photos: permissions.photos, videos:false});
-            }
-        } catch (err) {
-            console.warn(err);
-        }
+    checkAndFetch();
+    const subscription = AppState.addEventListener('change', (state) => {
+      if (state === 'active') checkAndFetch();
+    });
+    return () => {
+      isActive = false;
+      subscription.remove();
     };
+  }, []);
 
-    const getVideos = async(refresh) => {
-
-        if(!refresh) {
-
-            let tempVideos = [];
-
-            CameraRoll.getPhotos({
-                first: 10,
-                groupTypes: 'All',
-                assetType: 'Videos',
-            }).then((r) => {
-
-                lastVideoCursor.current = r.page_info.end_cursor;
-
-                for (let i = 0; i < r.edges.length; i++) {
-
-                    let m = {
-                        id: r.edges[i].node.id,
-                        uri: r.edges[i].node.image.uri,
-                        type: r.edges[i].node.type,
-                        selected: 0,
-                        height: r.edges[i].node.image.height,
-                        width: r.edges[i].node.image.width,
-                        size: r.edges[i].node.image.fileSize
-                    };
-
-                    tempVideos.push(m);
-                    tempVideos.push(m);
-                    tempVideos.push(m);
-                    tempVideos.push(m);
-                    tempVideos.push(m);
-                    tempVideos.push(m);
-                    tempVideos.push(m);
-                    tempVideos.push(m);
-                    tempVideos.push(m);
-
-
-
-
-                }
-
-                setVideos(tempVideos);
-
-            });
-
-        }else{
-
-            CameraRoll.getPhotos({
-                first: 10,
-                groupTypes: 'All',
-                assetType: 'Videos',
-                after: lastVideoCursor.current,
-            }).then((r) => {
-
-                lastVideoCursor.current = r.page_info.end_cursor;
-
-                for (let i = 0; i < r.edges.length; i++) {
-
-                    let m = {
-                        id: r.edges[i].node.id,
-                        uri: r.edges[i].node.image.uri,
-                        type: r.edges[i].node.type,
-                        selected: 0,
-                        height: r.edges[i].node.image.height,
-                        width: r.edges[i].node.image.width,
-                        size: r.edges[i].node.image.fileSize
-                    };
-
-                    setVideos(videos => [...videos, m]);
-
-                }
-
-            });
-
-        }
-
-        videosAlreadyFetchRef.current = true;
-
+  // Fetch media
+  const fetchMedia = async (after = null) => {
+    if (fetchingMore) return;
+    setFetchingMore(true);
+    try {
+      const res = await CameraRoll.getPhotos({
+        first,
+        assetType: 'All',
+        after: after || undefined,
+      });
+      setEndCursor(res.page_info.end_cursor);
+      setMedia((prev) => after ? [...prev, ...res.edges.map((e) => e.node)] : res.edges.map((e) => e.node));
+    } finally {
+      setFetchingMore(false);
     }
-
-    const getPhotos = async(refresh) => {
-
-        if(!refresh) {
-
-            let tempPhotos = [];
-
-            CameraRoll.getPhotos({
-                first: 10,
-                groupTypes: 'All',
-                assetType: 'Photos',
-            }).then((r) => {
-
-                lastPhotoCursor.current = r.page_info.end_cursor;
-
-                for (let i = 0; i < r.edges.length; i++) {
-
-                    let m = {
-                        id: r.edges[i].node.id,
-                        uri: r.edges[i].node.image.uri,
-                        type: r.edges[i].node.type,
-                        selected: 0,
-                        height: r.edges[i].node.image.height,
-                        width: r.edges[i].node.image.width,
-                        size: r.edges[i].node.image.fileSize
-                    };
-
-                    tempPhotos.push(m);
-
-                }
-
-                setPhotos(tempPhotos);
-
-            });
-
-        }else{
-
-            CameraRoll.getPhotos({
-                first: 10,
-                groupTypes: 'All',
-                assetType: 'Photos',
-                after: lastPhotoCursor.current,
-            }).then((r) => {
-
-                lastPhotoCursor.current = r.page_info.end_cursor;
-
-                for (let i = 0; i < r.edges.length; i++) {
-
-                    let m = {
-                        id: r.edges[i].node.id,
-                        uri: r.edges[i].node.image.uri,
-                        type: r.edges[i].node.type,
-                        selected: 0,
-                        height: r.edges[i].node.image.height,
-                        width: r.edges[i].node.image.width,
-                        size: r.edges[i].node.image.fileSize
-                    };
-
-                    setPhotos(photos => [...photos, m]);
-
-                }
-
-            });
-
-        }
-
-        photosAlreadyFetchRef.current = true;
-
-    }
-
-    const remove = (id) => {
-
-        /*let tempPhotosVideos = [...photosVideos];
-
-        for(let i = 0; i < tempPhotosVideos.length; i++) {
-
-            if (tempPhotosVideos[i].id === id) {
-
-                tempPhotosVideos[i].selected = 0;
-
-                setPhotosVideos(tempPhotosVideos);
-
-            }
-
-        }
-
-        let tempSelectedPhotosVideos = [...selectedPhotosVideos];
-
-        for(let i = 0; i < tempSelectedPhotosVideos.length; i++){
-
-            if(tempSelectedPhotosVideos[i].id === id) {
-                tempSelectedPhotosVideos.splice(i, 1);
-                setSelectedPhotosVideos(tempSelectedPhotosVideos);
-                setSelectedPhotosVideosExtraData(Math.random());
-                break;
-            }
-
-        }*/
-
-    }
-
-    const select = (id) => {
-
-
-        if(mediaType == 'Photos'){
-
-            for(let i = 0; i < photos.length; i++){
-
-                if(photos[i].id === id) {
-
-                    if(photos[i].selected == 0){
-
-                        photos[i].selected = 1;
-
-                        props.selectRemoveAssets(photos[i], true);
-
-                    }else{
-
-                        photos[i].selected = 0;
-
-                        props.selectRemoveAssets(photos[i], false);
-
-                    }
-
-
-                    break;
-
-                }
-
-            }
-
-        }
-
-        if(mediaType == 'Videos'){
-
-            for(let i = 0; i < videos.length; i++){
-
-                if(videos[i].id === id) {
-
-                    if(videos[i].selected == 0){
-
-                        videos[i].selected = 1;
-
-                        props.selectRemoveAssets(videos[i], true);
-
-                    }else{
-
-                        videos[i].selected = 0;
-
-                        props.selectRemoveAssets(videos[i], false);
-
-                    }
-
-
-                    break;
-
-                }
-
-            }
-
-        }
-
-        setPhotosVideosExtraData(Math.random())
-
-    }
-
-    const renderPhotoVideoItem = ({ item, index }) => {
-
-        return(
-            <PhotoVideoItem key={index} item={item} index={index} select={select}/>
-        );
-
-    }
-
-    const renderSelectedPhotoVideoItem = ({ item, index }) => {
-
-        return(
-            <SelectedPhotoVideoItem key={index} item={item} index={index} remove={remove}/>
-        );
-
-    }
-
-    const onEndReached = () => {
-
-        if(mediaType == 'Photos'){
-
-            if(photosAlreadyFetchRef.current){
-
-                getPhotos(true);
-
-            }
-
-        }
-
-
-        if(mediaType == 'Videos'){
-
-            if(videosAlreadyFetchRef.current){
-
-                getVideos(true);
-
-            }
-
-        }
-
-    }
-
-    const add = () => {w
-
-        props.useSelection(selectedPhotosVideos);
-
-        setSelectedPhotosVideos([]);
-
-        let tempPhotosVideos = [...photosVideos];
-
-        for(let i = 0; i < tempPhotosVideos.length; i++){
-
-            tempPhotosVideos[i].selected = 0;
-
-        }
-
-        setPhotosVideos(tempPhotosVideos);
-
-
-
-    }
-
-    const changeMediaType = (type) => {
-
-        setMediaType(type);
-
-    }
-
-    const gotoSettings = () => {
-        Linking.openSettings();
-    }
-
-
-    return(
-
-        <View style={{flexDirection:"column"}}>
-
-            {props.showHeader && (
-
-                <View style={[Styles.bottomsheet.bottomsheet_content_container_2, {borderBottomWidth:0}]}>
-
-                    {/****HEADER****/}
-                    <View style={Styles.bottomsheet.bottomsheet_header_container} >
-
-                        <View style={Styles.bottomsheet.bottomsheet_header_title_container}>
-
-                            <Text style={Styles.bottomsheet.bottomsheet_header_title}>
-                                {LanguageSelector.getText('photos_videos_library_title')}
-                            </Text>
-
-                        </View>
-
-                    </View>
-                    {/****END HEADER****/}
-
-                </View>
-
-            )}
-
-            {/****OPTIONS****/}
-            {props.showOptions && (
-
-
-            <View style={{height:30, width:"100%", flexDirection:'row', borderBottomWidth:1, borderBottomColor:Styles.containerBorderColor, backgroundColor:Styles.backgroundColor}}>
-
-                <View style={{position:"absolute", right:10, top:0, flexDirection:"row"}}>
-
-                    <Pressable style={{flexDirection:'column', width:50}} onPress={() => changeMediaType('Photos')}>
-                        <VerticalAligner/>
-                        <FontAwesomeIcon icon={faImages} size={20} style={{alignSelf:"center"}} color={Styles.fontSubColor}/>
-                        <VerticalAligner/>
-                    </Pressable>
-
-                    <Pressable style={{flexDirection:'column', width:50}} onPress={() => changeMediaType('Videos')}>
-                        <VerticalAligner/>
-                        <FontAwesomeIcon icon={faFilms} size={20} style={{alignSelf:"center"}} color={Styles.fontSubColor}/>
-                        <VerticalAligner/>
-                    </Pressable>
-
-                    <Pressable style={{flexDirection:'column', width:50}} >
-                        <VerticalAligner/>
-                        <FontAwesomeIcon icon={faCamera} size={20} style={{alignSelf:"center"}} color={Styles.fontSubColor}/>
-                        <VerticalAligner/>
-                    </Pressable>
-
-                </View>
-
-            </View>
-
-
-            )}
-            {/****END OPTIONS****/}
-
-            {/****PHOTOS AND VIDEOS****/}
-            <View style={{height:500, overflow:'hidden', backgroundColor:Styles.whiteColor}}>
-
-                {(permissions.photos && mediaType == 'Photos') && (
-
-                    <View style={{margin:10}}>
-
-                    <FlatList
-                        extraData={photosVideosExtraData}
-                        onEndReachedThreshold={.5}
-                        onEndReached={onEndReached}
-                        numColumns={3}
-                        estimatedItemSize={50}
-                        data={photos}
-                        maxToRenderPerBatch={10}
-                        renderItem={renderPhotoVideoItem}/>
-
-                    </View>
-
-                )}
-
-
-                {(!permissions.photos && mediaType == 'Photos') && (
-
-
-                    <View style={{flex:1}}>
-
-                        <VerticalAligner/>
-
-                        <Text style={{letterSpacing:Styles.letterSpacing, textAlign:'center', color: Styles.fontColor, fontSize: 14, lineHeight: 20, fontFamily: Styles.fontFamily, marginLeft:20, marginRight:20}}>
-                            {LanguageSelector.getText('photo_video_library_no_permission')}
-                        </Text>
-
-
-
-                        <Button style={{backgroundColor:Styles.backgroundColor, marginTop:20, width:200, alignSelf:'center'}} label= {LanguageSelector.getText('photo_video_library_no_permission_button')} onPress={gotoSettings}/>
-
-
-                        <VerticalAligner/>
-
-                    </View>
-
-                )}
-
-                {(permissions.videos && mediaType == 'Videos') && (
-
-
-
-                    <BottomSheetFlatList
-                        extraData={photosVideosExtraData}
-                        onEndReachedThreshold={.5}
-                        onEndReached={onEndReached}
-                        numColumns={3}
-                        estimatedItemSize={50}
-                        data={videos}
-                        maxToRenderPerBatch={10}
-                        renderItem={renderPhotoVideoItem}/>
-
-                )}
-
-
-                {(!permissions.videos && mediaType == 'Videos') && (
-
-
-                    <View style={{flex:1}}>
-
-                        <VerticalAligner/>
-
-                        <Text style={{letterSpacing:Styles.letterSpacing, textAlign:'center', color: Styles.fontColor, fontSize: 14, lineHeight: 20, fontFamily: Styles.fontFamily, marginLeft:20, marginRight:20}}>
-                            {LanguageSelector.getText('photo_video_library_no_permission')}
-                        </Text>
-
-
-
-                        <Button style={{backgroundColor:Styles.backgroundColor, marginTop:20, width:200, alignSelf:'center'}} label= {LanguageSelector.getText('photo_video_library_no_permission_button')} onPress={gotoSettings}/>
-
-
-                        <VerticalAligner/>
-
-                    </View>
-
-                )}
-
-
-
-            </View>
-            {/****END PHOTOS AND VIDEOS****/}
-
-        </View>
-
-
+  };
+
+  // Select/deselect
+  const handleSelect = (item) => {
+    setSelected((prev) => {
+      if (prev.find((i) => i.image.uri === item.image.uri)) {
+        return prev.filter((i) => i.image.uri !== item.image.uri);
+      } else {
+        return [...prev, item];
+      }
+    });
+  };
+
+  // Done
+  const handleDone = () => {
+    if (onSelectionDone) onSelectionDone(selected);
+    setSelected([]);
+  };
+
+  // Update file size every time selection changes
+  useEffect(() => {
+    let isMounted = true;
+    const updateSize = async () => {
+      let totalSizeBytes = 0;
+      try {
+        totalSizeBytes = await getSelectedFilesSize(selected);
+      } catch (e) {
+        totalSizeBytes = 0;
+      }
+      if (isMounted) {
+        const mb = (totalSizeBytes / (1024 * 1024));
+        setSelectedSizeMB(mb.toFixed(2));
+        setDisableDone(mb > 6);
+      }
+    };
+    updateSize();
+    return () => { isMounted = false; };
+  }, [selected]);
+
+  if (!hasPermission) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <Text style={{ textAlign: 'center', margin: 16 }}>
+          Permission required to access your photos and videos.
+        </Text>
+        <Pressable onPress={() => Linking.openSettings()} style={{ padding: 12, backgroundColor: '#2196f3', borderRadius: 8 }}>
+          <Text style={{ color: 'white' }}>Open Settings</Text>
+        </Pressable>
+      </View>
     );
+  }
+  if (loading) {
+    return <ActivityIndicator style={{ flex: 1 }} />;
+  }
 
-}
+  return (
+    <View style={{ flex: 1 }}>
+      <Text style={{ textAlign: 'center', marginVertical: 8 }}>
+        Selected size: {selectedSizeMB} MB
+      </Text>
+      <FlatList
+        data={media}
+        keyExtractor={(item) => item.image.uri}
+        numColumns={3}
+        renderItem={({ item }) => (
+          <Pressable
+            style={{
+              flex: 1 / 3,
+              aspectRatio: 1,
+              margin: 4,
+              borderWidth: selected.find((i) => i.image.uri === item.image.uri) ? 2 : 0,
+              borderColor: '#4caf50',
+              borderRadius: 8,
+              overflow: 'hidden',
+            }}
+            onPress={() => handleSelect(item)}
+          >
+            <Image source={{ uri: item.image.uri }} style={{ flex: 1, width: '100%', height: '100%' }} resizeMode="cover" />
+          </Pressable>
+        )}
+        onEndReached={() => endCursor && fetchMedia(endCursor)}
+        onEndReachedThreshold={0.5}
+        ListFooterComponent={fetchingMore ? <ActivityIndicator /> : null}
+      />
+      {onSelectionDone && (
+        <Pressable
+          onPress={handleDone}
+          style={{
+            margin: 16,
+            backgroundColor: disableDone ? '#aaa' : '#4caf50',
+            borderRadius: 8,
+            padding: 12,
+            alignItems: 'center',
+            opacity: disableDone ? 0.6 : 1,
+          }}
+          disabled={disableDone}
+        >
+          <Text style={{ color: 'white' }}>{selected.length ? `Done (${selected.length})` : 'Done'}</Text>
+          {disableDone && (
+            <Text style={{ color: 'yellow', fontSize: 12, marginTop: 4 }}>Max 6MB allowed</Text>
+          )}
+        </Pressable>
+      )}
+    </View>
+  );
+};
 
 export default PhotoVideoLibrary;
 
-
-const PhotoVideoItem = (props) => {
-
-    return(
-        <Pressable style={{flex:1, height:200, margin:1, backgroundColor:Styles.fontColor, borderRadius:10, overflow:'hidden'}} onPress={() => props.select(props.item.id)}>
-
-            <Image source={{uri:props.item.uri}} style={{flex:1}}/>
-
-            {props.item.selected === 1 && (
-
-                <View style={{position:'absolute', top:75, alignSelf:'center', width:30, height:30, borderRadius:15, opacity:.8, backgroundColor:Styles.whiteColor}}>
-                    <VerticalAligner/>
-                    <FontAwesomeIcon icon={faCheckCircle} size={20} color={Styles.greenColor} style={{alignSelf:'center'}}/>
-                    <VerticalAligner/>
-                </View>
-
-            )}
-
-
-
-        </Pressable>
-    );
-
-}
-
-const SelectedPhotoVideoItem = (props) => {
-
-    return(
-
-        <View style={{width:100, height:150, margin:1, backgroundColor:Styles.fontColor, borderRadius:10, overflow:'hidden'}} onPress={() => props.remove(props.item.id)}>
-
-            <Image source={{uri:props.item.uri}} style={{flex:1}}/>
-
-            <Pressable style={{position:'absolute', top:60, alignSelf:'center', width:30, height:30, borderRadius:15, opacity:.8, backgroundColor:Styles.whiteColor}} onPress={() => props.remove(props.item.id)}>
-                <VerticalAligner/>
-                <FontAwesomeIcon icon={faTimes} size={20} color={Styles.redColor} style={{alignSelf:'center'}}/>
-                <VerticalAligner/>
-            </Pressable>
-
-        </View>
-    );
-
-}

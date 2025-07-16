@@ -1416,6 +1416,11 @@
     "@nodelib/fs.scandir" "2.1.5"
     fastq "^1.6.0"
 
+"@react-native-camera-roll/camera-roll@^7.10.1":
+  version "7.10.1"
+  resolved "https://registry.yarnpkg.com/@react-native-camera-roll/camera-roll/-/camera-roll-7.10.1.tgz#55c511d30caac6dbf9c9bc57db3417a88bbde88c"
+  integrity sha512-6zuK+E+z3a4Nij5OrkMh9BL7J1/Eg0PB8iX7/chNwhghpTZ93cr3Zrj/02ueglN0BV/tIKmb+BDERfzVIGRT7w==
+
 "@react-native-community/cli-clean@19.0.0":
   version "19.0.0"
   resolved "https://registry.npmjs.org/@react-native-community/cli-clean/-/cli-clean-19.0.0.tgz"
@@ -5692,7 +5697,7 @@ react-is@^19.1.0:
 
 react-native-fs@^2.20.0:
   version "2.20.0"
-  resolved "https://registry.npmjs.org/react-native-fs/-/react-native-fs-2.20.0.tgz"
+  resolved "https://registry.yarnpkg.com/react-native-fs/-/react-native-fs-2.20.0.tgz#05a9362b473bfc0910772c0acbb73a78dbc810f6"
   integrity sha512-VkTBzs7fIDUiy/XajOSNk0XazFE9l+QlMAce7lGuebZcag5CnjszB+u4BdqzwaQOdcYb5wsJIsqq4kxInIRpJQ==
   dependencies:
     base-64 "^0.1.0"
@@ -5716,6 +5721,11 @@ react-native-is-edge-to-edge@1.1.7, react-native-is-edge-to-edge@^1.1.7:
   version "1.1.7"
   resolved "https://registry.npmjs.org/react-native-is-edge-to-edge/-/react-native-is-edge-to-edge-1.1.7.tgz"
   integrity sha512-EH6i7E8epJGIcu7KpfXYXiV2JFIYITtq+rVS8uEb+92naMRBdxhTuS8Wn2Q7j9sqyO0B+Xbaaf9VdipIAmGW4w==
+
+react-native-permissions@^5.4.1:
+  version "5.4.1"
+  resolved "https://registry.yarnpkg.com/react-native-permissions/-/react-native-permissions-5.4.1.tgz#b147e5901f2f5d847b367f2ba6e60378ebcee90c"
+  integrity sha512-MTou5DVn8IADr7OQjYePJzcxrVNEeODBvSpB8XOt5qBI9ui3HduSBn/KTNZECH/Ph2Y20OnZBMqe6Wp9IryrgQ==
 
 react-native-reanimated@^3.18.0:
   version "3.18.0"
